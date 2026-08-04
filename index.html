@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Trampas de Vapor - COLUN</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root{
+    --azul-vapor:#0b5fa5;
+    --azul-oscuro:#083b66;
+    --azul-claro:#e8f2fb;
+    --verde-ok:#1f9d55;
+    --verde-claro:#e7f8ee;
+    --rojo-no:#d64545;
+    --rojo-claro:#fdeaea;
+    --naranja:#e08a1e;
+    --gris-fondo:#f4f6f9;
+    --gris-borde:#dde3ea;
+    --gris-texto:#3c4552;
+    --gris-suave:#7a8494;
+    --blanco:#ffffff;
+    --colun-cielo:#b2d0da;
+    --colun-verde-suave:#a3b94c;
+    --colun-verde:#94a934;
+    --colun-verde-oscuro:#7b912d;
+    --colun-cafe:#59494a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:var(--gris-fondo);
+    color:var(--gris-texto);
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:24px 20px 60px;}
+  header.top{
+    background:#fff;
+    color:var(--gris-texto);border-radius:14px;padding:20px 28px 20px 38px;margin-bottom:22px;
+    display:flex;flex-direction:column;gap:12px;
+    position:relative;overflow:hidden;border:1px solid var(--gris-borde);
+    box-shadow:0 2px 12px rgba(0,0,0,.05);
+  }
+  header.top::before{
+    content:'';position:absolute;left:0;top:0;bottom:0;width:10px;
+    background:linear-gradient(180deg, var(--colun-cielo) 0% 22%, var(--colun-verde) 22% 45%, var(--colun-verde-oscuro) 45% 65%, var(--colun-cafe) 65% 100%);
+  }
+  .colun-topbar{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--gris-borde);padding-bottom:10px;}
+  .colun-tagline{font-size:.72rem;color:var(--colun-verde-oscuro);font-weight:800;text-transform:uppercase;letter-spacing:.06em;}
+  .colun-credit{font-size:.92rem;color:var(--gris-suave);font-weight:600;font-style:italic;}
+  .colun-brand{display:flex;align-items:center;gap:10px;}
+  .colun-brand img{height:50px;width:auto;display:block;}
+  .colun-brand-text{font-size:.66rem;line-height:1.25;color:var(--colun-cafe);font-weight:700;text-transform:uppercase;text-align:right;max-width:120px;}
+  .top-main{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;}
+  .last-updated{font-size:.78rem;color:var(--gris-suave);font-weight:600;white-space:nowrap;background:var(--gris-fondo);border:1px solid var(--gris-borde);border-radius:20px;padding:5px 12px;}
+  header.top h1{margin:0 0 6px;font-size:1.5rem;color:var(--colun-cafe);}
+  header.top p{margin:0;opacity:.85;font-size:.9rem;color:var(--gris-texto);}
+  .badge-fuente{background:var(--gris-fondo);color:var(--gris-texto);padding:8px 14px;border-radius:8px;font-size:.78rem;line-height:1.4;text-align:right;}
+  .colun-band{height:8px;border-radius:6px;margin:8px 0 18px;background:linear-gradient(90deg, var(--colun-cielo), var(--colun-verde-suave), var(--colun-verde), var(--colun-verde-oscuro), var(--colun-cafe));}
+
+  .visor-bar{display:flex;justify-content:flex-end;margin-bottom:16px;}
+  .visor-btn{background:var(--azul-vapor);color:#fff;border:none;padding:11px 18px;border-radius:9px;font-size:.85rem;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(11,95,165,.25);}
+  .visor-btn:hover{background:var(--azul-oscuro);}
+  .visor-dialog{width:92vw;height:90vh;max-width:1400px;padding:0;border:none;border-radius:12px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.35);}
+  .visor-dialog::backdrop{background:rgba(8,59,102,.6);}
+  .visor-dialog-header{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--azul-oscuro);color:#fff;font-weight:700;font-size:.88rem;}
+  .visor-dialog-actions{display:flex;align-items:center;gap:14px;}
+  .visor-link{color:#fff;text-decoration:underline;font-size:.78rem;font-weight:600;white-space:nowrap;}
+  .visor-close{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:1rem;cursor:pointer;padding:4px 10px;border-radius:6px;line-height:1;}
+  .visor-close:hover{background:rgba(255,255,255,.3);}
+  .visor-iframe{width:100%;height:calc(90vh - 46px);border:none;display:block;}
+
+  .hero-money{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px;
+  }
+  @media (max-width:900px){.hero-money{grid-template-columns:1fr;}}
+  .hero-card{
+    border-radius:14px;padding:20px 24px;color:#fff;position:relative;overflow:hidden;
+    box-shadow:0 4px 14px rgba(0,0,0,.08);
+  }
+  .hero-card.perdida{background:linear-gradient(120deg,#a52424,var(--rojo-no));}
+  .hero-card.recuperado{background:linear-gradient(120deg,#136b39,var(--verde-ok));}
+  .hero-card.total{background:linear-gradient(120deg,#a97a0a,#f0b429); color:#2b2200;}
+  .hero-card .hero-label{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;opacity:.9;font-weight:700;margin-bottom:6px;}
+  .hero-card .hero-value{font-size:2.1rem;font-weight:800;line-height:1.1;}
+  .hero-card .hero-sub{font-size:.82rem;opacity:.92;margin-top:6px;}
+  .hero-card .hero-icon{position:absolute;right:16px;top:16px;font-size:2rem;opacity:.35;}
+  .hero-card.total .hero-sub{opacity:.85;}
+
+  .badge-ot{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.7rem;font-weight:700;}
+  .badge-ot.Realizado{background:var(--verde-claro);color:var(--verde-ok);}
+  .badge-ot.Pendiente{background:var(--rojo-claro);color:var(--rojo-no);}
+  .badge-ot.EnProgramacion{background:#fdf1de;color:var(--naranja);}
+  .badge-ot.Revision{background:#fdeecb;color:#a15c00;border:1px solid #f0b429;}
+  .badge-ot.Sin{background:#eef0f3;color:var(--gris-suave);}
+  .conflict-row{background:#fffaf0 !important;}
+  .conflict-icon{color:#c77700;font-weight:700;cursor:help;}
+  .discrepancy-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:10px;}
+  .discrepancy-table th{background:var(--azul-oscuro);color:#fff;text-align:left;padding:8px 10px;}
+  .discrepancy-table td{padding:8px 10px;border-bottom:1px solid var(--gris-borde);}
+  .stat-mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0;}
+  .stat-mini div{background:var(--gris-fondo);border-radius:8px;padding:10px 14px;}
+  .stat-mini .n{font-size:1.3rem;font-weight:800;color:var(--azul-oscuro);}
+  .stat-mini .l{font-size:.72rem;color:var(--gris-suave);text-transform:uppercase;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:24px;}
+  .kpi{background:var(--blanco);border:1px solid var(--gris-borde);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;}
+  .kpi .label{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--gris-suave);font-weight:600;margin-bottom:6px;}
+  .kpi .value{font-size:1.5rem;font-weight:700;color:var(--azul-oscuro);}
+  .kpi .sub{font-size:.75rem;color:var(--gris-suave);margin-top:4px;}
+  .ton-highlight{font-size:1.05rem;font-weight:800;color:var(--azul-oscuro);}
+  .kpi.money .ton-highlight{color:var(--naranja);}
+  .kpi.ok .ton-highlight{color:var(--verde-ok);}
+  .kpi.no .ton-highlight{color:var(--rojo-no);}
+  .kpi .footnote{font-size:.68rem;color:var(--gris-suave);margin-top:8px;line-height:1.4;font-style:italic;border-top:1px dashed var(--gris-borde);padding-top:6px;}
+  .kpi.ok{border-left:5px solid var(--verde-ok);}
+  .kpi.no{border-left:5px solid var(--rojo-no);}
+  .kpi.total{border-left:5px solid var(--azul-vapor);}
+  .kpi.money{border-left:5px solid var(--naranja);}
+
+  .panel{background:var(--blanco);border:1px solid var(--gris-borde);border-radius:12px;padding:20px 22px;margin-bottom:22px;}
+  .panel h2{margin:0 0 4px;font-size:1.05rem;color:var(--azul-oscuro);}
+  .panel .desc{font-size:.83rem;color:var(--gris-suave);margin:0 0 16px;}
+
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .charts-grid .full{grid-column:1/-1;}
+  .chart-box{position:relative;height:280px;}
+  .chart-box.tall{height:410px;}
+  @media (max-width:860px){.charts-grid{grid-template-columns:1fr;}}
+
+  details.panel{padding:0;}
+  details.panel summary{
+    list-style:none;cursor:pointer;padding:20px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;
+  }
+  details.panel summary::-webkit-details-marker{display:none;}
+  details.panel summary .sum-text h2{margin:0 0 4px;}
+  details.panel summary .sum-text p{margin:0;font-size:.83rem;color:var(--gris-suave);}
+  details.panel summary .chevron{font-size:.8rem;color:var(--azul-vapor);font-weight:700;transition:transform .2s;white-space:nowrap;}
+  details.panel[open] summary .chevron{transform:rotate(180deg);}
+  details.panel .details-body{padding:0 22px 20px;}
+
+  .explain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;}
+  .explain-card{background:var(--azul-claro);border-radius:10px;padding:14px 16px;font-size:.85rem;line-height:1.5;}
+  .explain-card h3{margin:0 0 6px;font-size:.88rem;color:var(--azul-oscuro);}
+  .explain-card.rojo{background:var(--rojo-claro);}
+  .explain-card.rojo h3{color:var(--rojo-no);}
+  .explain-card.verde{background:var(--verde-claro);}
+  .explain-card.verde h3{color:var(--verde-ok);}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px;}
+  .toolbar input[type=text]{flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--gris-borde);border-radius:8px;font-size:.85rem;}
+  .filter-btns{display:flex;gap:6px;}
+  .filter-btns button{border:1px solid var(--gris-borde);background:#fff;padding:8px 14px;border-radius:8px;font-size:.8rem;cursor:pointer;font-weight:600;color:var(--gris-texto);}
+  .filter-btns button.active{background:var(--azul-vapor);color:#fff;border-color:var(--azul-vapor);}
+  .filter-btns button.active.no-active{background:var(--rojo-no);border-color:var(--rojo-no);}
+  .filter-btns button.active.ok-active{background:var(--verde-ok);border-color:var(--verde-ok);}
+  .filter-btns button.active.programada-active{background:var(--naranja);border-color:var(--naranja);}
+  .filter-btns button.active.norealizada-active{background:var(--gris-suave);border-color:var(--gris-suave);}
+  .filter-btns button.programada-btn{color:var(--naranja);border-color:var(--naranja);}
+  .filter-btns button.norealizada-btn{color:var(--gris-suave);border-color:var(--gris-suave);}
+  .count-tag{font-size:.78rem;color:var(--gris-suave);white-space:nowrap;}
+
+  table{width:100%;border-collapse:collapse;font-size:.82rem;}
+  thead th{position:sticky;top:0;background:var(--azul-oscuro);color:#fff;text-align:left;padding:10px 10px;cursor:pointer;user-select:none;white-space:nowrap;}
+  thead th:hover{background:var(--azul-vapor);}
+  tbody td{padding:9px 10px;border-bottom:1px solid var(--gris-borde);vertical-align:top;}
+  tbody tr:hover{background:var(--azul-claro);}
+  .table-scroll{max-height:560px;overflow:auto;border:1px solid var(--gris-borde);border-radius:10px;}
+  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.02em;}
+  .pill.ok{background:var(--verde-claro);color:var(--verde-ok);}
+  .pill.no{background:var(--rojo-claro);color:var(--rojo-no);}
+  .pill.programada{background:#fdf1de;color:var(--naranja);}
+  .pill.norealizada{background:#eef0f3;color:var(--gris-suave);}
+  .motivo{color:var(--gris-suave);font-style:italic;}
+  .motivo.empty{opacity:.4;}
+  .num{text-align:right;font-variant-numeric:tabular-nums;}
+
+  footer{text-align:center;font-size:.75rem;color:var(--gris-suave);margin-top:30px;line-height:1.6;}
+  .legend-note{font-size:.75rem;color:var(--gris-suave);margin-top:10px;}
+  .ot-legend{font-size:.82rem;color:var(--azul-oscuro);margin:16px auto 0;padding-left:0;border-top:1px solid var(--gris-borde);padding-top:14px;text-align:center;list-style:none;max-width:760px;}
+  .ot-legend li{margin-bottom:6px;line-height:1.45;}
+  .ot-legend li:last-child{margin-bottom:0;}
+  .estado-legend-bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;background:var(--blanco);border:1px solid var(--gris-borde);border-radius:10px;padding:10px 16px;margin-bottom:16px;font-size:.8rem;}
+  .estado-legend-bar .elb-title{font-weight:700;color:var(--azul-oscuro);margin-right:2px;}
+  .estado-legend-bar .elb-chip{padding:4px 11px;border-radius:14px;font-weight:600;white-space:nowrap;}
+  .data-status-bar{
+    max-width:1280px;margin:0 auto 10px;padding:8px 16px;border-radius:8px;
+    font-size:.85rem;font-weight:600;text-align:center;
+  }
+  .data-status-bar.live{ background:#e7f8ee; color:#1f9d55; border:1px solid #b9e6cb; }
+  .data-status-bar.local{ background:#fff8e6; color:#9a6b00; border:1px solid #f0dca3; }
+  .data-status-bar.error{ background:#fdeaea; color:#d64545; border:1px solid #f3c3c3; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="dataStatusBar" class="data-status-bar local">🟡 Mostrando copia de datos guardada en el archivo</div>
+
+  <header class="top">
+    <div class="colun-topbar">
+      <span class="colun-tagline">Toda la magia del sur</span>
+      <span class="colun-credit">Compilado por Felipe Barrera</span>
+      <div class="colun-brand">
+        <span class="colun-brand-text">Cooperativa Agrícola y<br>Lechera de la Unión</span>
+        <img src="data:image/png;base64,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" alt="Logo COLUN">
+      </div>
+    </div>
+    <div class="top-main">
+      <div>
+        <h1>Seguimiento de plan correctivo trampas de vapor - Plantas PILU-COLUMELA</h1>
+        <p>Diagnóstico de pérdidas de vapor y estado de reparación (PILU / COLUMELA)</p>
+      </div>
+      <span class="last-updated" id="lastUpdated">Última actualización: 03-08-2026</span>
+    </div>
+  </header>
+
+  <div class="estado-legend-bar">
+    <span class="elb-title">Estado de las trampas:</span>
+    <span class="elb-chip" style="background:var(--verde-claro);color:var(--verde-ok);">Realizada — reparada</span>
+    <span class="elb-chip" style="background:#fdf1de;color:var(--naranja);">Programada — en programación (tiene OT activa)</span>
+    <span class="elb-chip" style="background:var(--rojo-claro);color:var(--rojo-no);">Pendiente — tiene OT, pero fue devuelta</span>
+    <span class="elb-chip" style="background:#eef0f3;color:var(--gris-suave);">No realizada — sin gestión (sin OT)</span>
+  </div>
+
+  <details class="panel">
+    <summary>
+      <div class="sum-text">
+        <h2>¿Cómo leer este dashboard?</h2>
+        <p>Conceptos clave de la planilla de origen, para interpretar correctamente los datos. Clic para abrir/cerrar.</p>
+      </div>
+      <span class="chevron">&#9662; Ver más</span>
+    </summary>
+    <div class="details-body">
+      <div class="explain-grid">
+        <div class="explain-card">
+          <h3>¿Qué es una trampa de vapor?</h3>
+          Dispositivo que drena condensado y aire de la red sin dejar escapar vapor vivo. Si falla, el vapor se pierde de forma continua, encareciendo la generación (combustible/biomasa) y afectando la eficiencia térmica de la planta.
+        </div>
+        <div class="explain-card rojo">
+          <h3>Condición: "Falla Abierta"</h3>
+          La trampa quedó pasando vapor vivo de forma permanente (soplando). Es la causa de prácticamente toda la pérdida en CLP de esta muestra (<span id="explFallaAbierta">77</span> de <span id="explFallaAbiertaTotal">84</span> trampas).
+        </div>
+        <div class="explain-card">
+          <h3>Condición: "Fuga externa" / "Reactivada"</h3>
+          "Fuga externa": fuga por cuerpo/unión, sin pérdida de vapor cuantificada (kg/h = 0, <span id="explFugaExterna">4</span> trampas), pero requiere intervención igual. "Reactivada": trampa que estaba "Fuera de uso" (o sin registrar) en el censo general SXS y volvió a servicio o presentó falla con una OT (<span id="explReactivadas">4</span> trampas, agregadas por el cruce de datos).
+        </div>
+        <div class="explain-card verde">
+          <h3>Estado "Realizada"</h3>
+          Trampa ya reparada, reemplazada u homologada a otro modelo. Su pérdida ya fue eliminada y se contabiliza como ahorro recuperado.
+        </div>
+        <div class="explain-card rojo">
+          <h3>Estados "Programada" / "Pendiente" / "No realizada"</h3>
+          Trampa aún en falla. "Programada": tiene OT activa en espera de ejecución. "Pendiente": tiene OT, pero fue devuelta. "No realizada": sin ninguna gestión iniciada. La columna "Comentario" original indica el motivo tal como fue registrado por el equipo de mantenimiento.
+        </div>
+        <div class="explain-card">
+          <h3>Metodología del costo</h3>
+          kg/h de vapor perdido &rarr; ton/año (&times; 4.320 horas de operación/año &divide; 1.000 &times; 0,60 factor de servicio) &rarr; CLP/año (calculado directamente desde kg/h &times; 4.320 &divide; 1.000 &times; $29.800/ton, sin aplicar el factor de servicio). El factor de servicio de 0,60 refleja que no todas las trampas operan 24/7; se aplica solo a las toneladas/año informativas, no al costo. Estos supuestos están documentados y son editables en "Seguimiento trampas correctivo.xlsx" (hoja Resumen).
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="visor-bar">
+    <button id="btnVisor" class="visor-btn" type="button">🔍 Visor de trampas</button>
+  </div>
+
+  <dialog id="visorDialog" class="visor-dialog">
+    <div class="visor-dialog-header">
+      <span>Visor de Trampas de Vapor — PILU / COLUMELA (fotos por Tag)</span>
+      <div class="visor-dialog-actions">
+        <a href="#" id="visorNewTab" class="visor-link">Abrir en pestaña nueva ↗</a>
+        <button id="visorClose" type="button" class="visor-close" aria-label="Cerrar">✕</button>
+      </div>
+    </div>
+    <iframe id="visorFrame" class="visor-iframe" title="Visor de Trampas de Vapor"></iframe>
+  </dialog>
+
+  <section class="hero-money">
+    <div class="hero-card recuperado">
+      <div class="hero-icon">&#10003;</div>
+      <div class="hero-label">Ahorro recuperado (trampas Realizadas)</div>
+      <div class="hero-value" id="heroRecClp">$89.651.747 / año</div>
+      <div class="hero-sub"><span id="heroRecN">40</span> trampas reparadas &middot; <span id="heroRecKgh">696,4</span> kg/h de vapor ya recuperado</div>
+    </div>
+    <div class="hero-card total">
+      <div class="hero-icon">&#931;</div>
+      <div class="hero-label">Costo total pérdida anual (100% muestra)</div>
+      <div class="hero-value" id="heroTotClp">$142.173.028 / año</div>
+      <div class="hero-sub"><span id="heroTotN">84</span> trampas relevadas &middot; <span id="heroTotKgh">1.104,4</span> kg/h de vapor (base del diagnóstico)</div>
+    </div>
+    <div class="hero-card perdida">
+      <div class="hero-icon">&#9888;</div>
+      <div class="hero-label">Pérdida vigente (trampas sin reparar)</div>
+      <div class="hero-value" id="heroPerClp">$52.521.281 / año</div>
+      <div class="hero-sub"><span id="heroPerN">44</span> trampas en falla (Programada + Pendiente + No realizada) &middot; <span id="heroPerKgh">408,0</span> kg/h de vapor perdido en forma continua</div>
+    </div>
+  </section>
+
+  <section class="kpi-grid">
+    <div class="kpi total">
+      <div class="label">Trampas a reparar</div>
+      <div class="value" id="kpiTotal">84</div>
+      <div class="sub">PILU: <span id="kpiPilu">42</span> &middot; COLUMELA: <span id="kpiColumela">42</span> &middot; incluye <span id="kpiReactivadasN">4</span> reactivadas</div>
+      <div class="footnote">Reactivadas: no estaban en el censo original de 80 trampas — el Censo General SXS (marzo-2026) las registraba como "Fuera de uso" (o sin registrar) en esa fecha, pero reaparecieron con OT o presentaron falla posteriormente, por lo que se incorporaron al seguimiento. Tags: <span id="kpiReactivadasTags">10157, 10972, 10974, 10906</span>.</div>
+    </div>
+    <div class="kpi money">
+      <div class="label">Pérdida total de vapor</div>
+      <div class="value" id="kpiTotKgh">1.104,4 Kv/hr</div>
+      <div class="sub"><span class="ton-highlight">≈ <span id="kpiTotTon">2.862,5</span> ton vapor/año</span> (factor de servicio 0,60)</div>
+    </div>
+    <div class="kpi ok">
+      <div class="label">Vapor recuperado (trampas Realizadas)</div>
+      <div class="value" id="kpiRecKgh">696,4 Kv/hr</div>
+      <div class="sub"><span id="kpiRecN">40</span> trampas reparadas &middot; <span class="ton-highlight">≈<span id="kpiRecTon">1.805,0</span> ton vapor/año</span> &middot; <span id="kpiRecClp">$89.651.747</span>/año ahorrados</div>
+    </div>
+    <div class="kpi no">
+      <div class="label">Pérdida actual (sin reparar)</div>
+      <div class="value" id="kpiPerKgh">408,0 Kv/hr</div>
+      <div class="sub"><span id="kpiPerN">44</span> trampas sin reparar &middot; <span class="ton-highlight">≈<span id="kpiPerTon">1.057,5</span> ton vapor/año</span> &middot; <span id="kpiPerClp">$52.521.281</span>/año</div>
+    </div>
+  </section>
+
+  <section class="kpi-grid">
+    <div class="kpi ok">
+      <div class="label">Realizada (reparada)</div>
+      <div class="value"><span id="stRealizadaN">40</span> <span style="font-size:.9rem;color:var(--gris-suave)">(<span id="stRealizadaPct">47,6</span>%)</span></div>
+      <div class="sub">Ahorro ya recuperado: <span id="stRealizadaClp">$89.651.747</span>/año</div>
+    </div>
+    <div class="kpi" style="border-left:5px solid var(--naranja);">
+      <div class="label">Programada</div>
+      <div class="value"><span id="stProgramadaN">26</span> <span style="font-size:.9rem;color:var(--gris-suave)">(<span id="stProgramadaPct">31,0</span>%)</span></div>
+      <div class="sub">Tiene OT activa, en espera de ejecución &middot; <span id="stProgramadaClp">$29.507.576</span>/año en juego</div>
+    </div>
+    <div class="kpi no">
+      <div class="label">Pendiente</div>
+      <div class="value"><span id="stPendienteN">3</span> <span style="font-size:.9rem;color:var(--gris-suave)">(<span id="stPendientePct">3,6</span>%)</span></div>
+      <div class="sub">Tiene OT, pero fue devuelta &middot; <span id="stPendienteClp">$5.545.947</span>/año en juego</div>
+    </div>
+    <div class="kpi" style="border-left:5px solid var(--gris-suave);">
+      <div class="label">No realizada</div>
+      <div class="value"><span id="stNorealizadaN">15</span> <span style="font-size:.9rem;color:var(--gris-suave)">(<span id="stNorealizadaPct">17,9</span>%)</span></div>
+      <div class="sub">Sin gestión / sin OT &middot; <span id="stNorealizadaClp">$17.467.758</span>/año en juego</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Registro de Órdenes de Trabajo (OT)</h2>
+    <p class="desc">Trazabilidad formal de las OT asociadas a las trampas en seguimiento. El estado de gestión de cada trampa (Realizada / Programada / Pendiente / No realizada) se muestra en el gráfico "Estado de las trampas" de la sección "Vista general", más abajo.</p>
+    <div class="stat-mini" style="grid-template-columns:repeat(3,1fr);margin-top:0;">
+      <div><div class="n" id="otUnicas">64</div><div class="l">OT únicas totales</div></div>
+      <div><div class="n" id="otConOt">64/84</div><div class="l">Trampas con OT asignada</div></div>
+      <div><div class="n" id="otSinOt">20/84</div><div class="l">Trampas sin OT asignada</div></div>
+    </div>
+    <p class="legend-note" id="otLegendNote">20 de las 84 trampas no tienen OT registrada (15 "No realizada" sin gestión iniciada + 2 "Programada" en programación interna sin OT formal aún + 3 "Realizada" resueltas antes del período de seguimiento de OT).</p>
+  </section>
+
+  <section class="panel">
+    <h2>Vista general</h2>
+    <p class="desc">Distribución de trampas por estado, y pérdida de vapor (CLP/año) por planta y ubicación.</p>
+    <div class="charts-grid">
+      <div>
+        <div class="chart-box" style="height:380px;"><canvas id="chartEstado"></canvas></div>
+      </div>
+      <div>
+        <div class="chart-box" style="height:286px;"><canvas id="chartPlanta"></canvas></div>
+      </div>
+      <div class="full">
+        <ol class="ot-legend">
+          <li><strong style="color:var(--verde-ok)">Realizada:</strong> la trampa fue reparada, reemplazada u homologada — su pérdida ya fue eliminada.</li>
+          <li><strong style="color:var(--naranja)">Programada:</strong> tiene una OT activa, coordinada con mantenimiento, en espera de fecha de ejecución.</li>
+          <li><strong style="color:var(--rojo-no)">Pendiente:</strong> tiene OT, pero fue devuelta por alguna razón (repuesto, prioridad, reasignación).</li>
+          <li><strong style="color:#7a8494">No realizada:</strong> sin gestión iniciada — no tiene ninguna OT asociada.</li>
+        </ol>
+      </div>
+      <div class="full">
+        <div class="toolbar" style="margin-bottom:10px;">
+          <span style="font-size:.85rem;font-weight:600;color:var(--azul-oscuro);">Avance por planta:</span>
+          <div class="filter-btns" id="plantaBtns">
+            <button type="button" data-planta="PILU" class="active">PILU</button>
+            <button type="button" data-planta="COLUMELA">COLUMELA</button>
+          </div>
+        </div>
+        <div class="stat-mini" id="plantaStats">
+          <div><div class="n" id="pTotal">–</div><div class="l">Total trampas</div></div>
+          <div><div class="n" id="pOk" style="color:var(--verde-ok)">–</div><div class="l">Realizada (reparadas)</div></div>
+          <div><div class="n" id="pNo" style="color:var(--rojo-no)">–</div><div class="l">Pendiente de reparar</div></div>
+          <div><div class="n" id="pPct">–</div><div class="l">% Avance</div></div>
+          <div><div class="n" id="pClpOk" style="color:var(--verde-ok)">–</div><div class="l">CLP recuperado/año</div></div>
+          <div><div class="n" id="pClpNo" style="color:var(--rojo-no)">–</div><div class="l">CLP pendiente/año</div></div>
+        </div>
+        <div class="chart-box tall"><canvas id="chartPlantaAvance"></canvas></div>
+        <p class="legend-note">Selecciona una planta para ver el detalle de avance (Realizada vs. pendiente) por área. Los totales y el gráfico se actualizan según la selección.</p>
+      </div>
+      <div class="full">
+        <div class="chart-box tall"><canvas id="chartLocalizacion"></canvas></div>
+      </div>
+      <div class="full">
+        <div class="chart-box tall"><canvas id="chartArea"></canvas></div>
+        <p class="legend-note">Detalle por estado (Realizada, Programada, Pendiente, No realizada) por área de planta, según Censo General SXS. Se muestran las 15 áreas con mayor cantidad de trampas.</p>
+      </div>
+      <div class="full">
+        <div class="chart-box"><canvas id="chartMotivo"></canvas></div>
+        <p class="legend-note">Motivos registrados para las trampas aún sin reparar (Programada+Pendiente+No realizada), según columna "Comentario" del Excel original. Cada barra está coloreada según el estado predominante de ese motivo. "Sin comentario" agrupa filas sin anotación; se excluyen notas de trazabilidad de datos que no son un motivo operativo.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Detalle de las <span id="detTotalTitle">84</span> trampas (Realizada / Programada / Pendiente / No realizada)</h2>
+    <p class="desc">Filtra, busca y ordena. Haz clic en un encabezado para ordenar por esa columna. Incluye las <span id="detReactivadasDesc">4</span> trampas reactivadas agregadas por el cruce con el censo general.</p>
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="Buscar por Tag, ubicación, planta, fabricante o motivo...">
+      <div class="filter-btns">
+        <button data-filter="all" class="active">Todas (<span id="btnAllN">84</span>)</button>
+        <button data-filter="Realizada" class="ok-btn">Realizada (<span id="btnRealizadaN">40</span>)</button>
+        <button data-filter="Programada" class="programada-btn">Programada (<span id="btnProgramadaN">26</span>)</button>
+        <button data-filter="Pendiente" class="no-btn">Pendiente (<span id="btnPendienteN">3</span>)</button>
+        <button data-filter="No realizada" class="norealizada-btn">No realizada (<span id="btnNorealizadaN">15</span>)</button>
+      </div>
+      <span class="count-tag" id="countTag">Mostrando 84 de 84</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th data-key="tag">Tag</th>
+            <th data-key="planta">Planta</th>
+            <th data-key="localizacion">Ubicación</th>
+            <th data-key="fabricante">Fabricante / Tipo</th>
+            <th data-key="condicion">Condición</th>
+            <th data-key="estado">Estado</th>
+            <th data-key="kgh">Pérdida (kg/h)</th>
+            <th data-key="clp">Costo (CLP/año)</th>
+            <th data-key="comentario">Motivo / Comentario</th>
+            <th data-key="ot">OT</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" style="display:none;">
+    <h2>Cruce con "Historia de cambio de trampas" + Censo General SXS (reconciliado)</h2>
+    <p class="desc">Estado final tras cruzar el censo original, el archivo de OT (17-06-2026) y el Censo General SXS PILU-COLUMELA-MATRICES (marzo-2026), usado como base para resolver discrepancias. Ver el detalle completo, editable, en "Seguimiento trampas correctivo.xlsx".</p>
+
+    <div class="stat-mini">
+      <div><div class="n">63</div><div class="l">OT únicas totales</div></div>
+      <div><div class="n">39</div><div class="l">OT Realizado</div></div>
+      <div><div class="n">7</div><div class="l">OT Pendiente</div></div>
+      <div><div class="n">23</div><div class="l">OT En Programación</div></div>
+      <div><div class="n">0</div><div class="l">OT Requiere revisión</div></div>
+      <div><div class="n">63/83</div><div class="l">Trampas con OT registrada</div></div>
+    </div>
+
+    <h3 style="font-size:.92rem;color:var(--azul-oscuro);margin:18px 0 6px;">✅ Cambios aplicados en esta reconciliación</h3>
+    <table class="discrepancy-table">
+      <thead><tr><th>Tag</th><th>Cambio</th><th>Motivo</th></tr></thead>
+      <tbody>
+        <tr><td>10995, 11000</td><td>"no" &rarr; "ok"</td><td>OT Realizado (más reciente que el censo original)</td></tr>
+        <tr><td>10922</td><td>"ok" &rarr; "no"</td><td>OT 1007871 figura "Pendiente" + Censo General SXS confirma "Falla Abierta"</td></tr>
+        <tr><td>10157, 10972, 10974</td><td>Agregadas (+3)</td><td>No estaban en el censo de 80; el Censo General SXS confirma que existen ("Fuera de uso", reactivadas con OT)</td></tr>
+        <tr><td>12842, 12998</td><td>"Requiere revisión" &rarr; "Realizado"</td><td>Conflicto entre hojas del archivo de OT (Realizado vs En Programación) confirmado en terreno como Realizado</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:.92rem;color:var(--azul-oscuro);margin:18px 0 6px;">⚠ Conflictos sin resolver — requieren revisión en terreno</h3>
+    <p class="legend-note" style="margin-top:0;">No se asumió ningún valor: el estado original se mantuvo intacto.</p>
+    <p class="legend-note" style="margin-top:0;">Sin conflictos pendientes por el momento (los últimos dos, Tags 12842 y 12998, fueron confirmados como "Realizado" el 20-07-2026).</p>
+
+    <p class="legend-note">✅ El Tag duplicado con datos incompatibles (OT 1023315, antes registrado por error como 10966) fue corregido en el archivo fuente: la fila correspondía en realidad al Tag 12997, que no forma parte de las 83 trampas en seguimiento. El Tag 10966 queda con un solo registro válido (COLUMELA, Sala CIP, OT 1023658, Realizado).</p>
+
+    <p class="legend-note">18 de las 83 trampas en seguimiento no tienen ningún registro de OT (15 pendientes sin gestión iniciada + 3 "ok" resueltas antes del período de seguimiento de OT).</p>
+    <p class="legend-note">Se agregaron 20 nuevas OT (Tags 12898, 12893, 12900, 12801, 12811, 12812, 12819, 12830, 12944, 12945, 12948, 12949, 12951, 12952, 12953, 12943, 12879, 12903, 10967, 10986), todas con estado "Pendiente" en el momento de su incorporación — no cambian el estado ok/no de ninguna trampa, solo agregan su seguimiento de gestión. Actualización posterior: las 20 fueron formalizadas a "En Programación" al coincidir con la nota del técnico en el campo Comentario; se aplicó el mismo criterio al Tag 12956 (no incluido en esta lista original), totalizando 21 trampas formalizadas. Actualización posterior (20-07-2026): 7 de estas trampas (Tags 12898, 12893, 12900, 12801, 12811, 12812 y 12879) fueron reparadas y pasaron de "En Programación" a "Realizado" (estado "ok"). Actualización posterior (20-07-2026): los Tags 12842 y 12998, que presentaban conflicto "Requiere revisión" por estado distinto entre hojas del archivo de OT, fueron confirmados en terreno como "Realizado".</p>
+    <p class="legend-note">Cambio de fondo (20-07-2026): se reemplazó el esquema binario Estado "ok"/"no" + "Estado OT" por un único campo Estado con 4 valores: Realizada (reparada), Programada (tiene OT activa, aún no reparada), Pendiente (tiene OT, pero fue devuelta) y No realizada (sin gestión, sin OT). Mapeo aplicado: "ok" &rarr; Realizada (40); "no"+Estado OT "En Programación" &rarr; Programada (23); "no"+Estado OT "Pendiente" &rarr; Pendiente (7); "no" sin Estado OT &rarr; No realizada (13). Aplicado en las 3 planillas (Seguimiento, Detalle pérdidas, Historia de cambio queda sin tocar por ser bitácora de origen) y en este dashboard. Punto de recuperación previo al cambio guardado en la carpeta "Puntos de recuperacion/2026-07-20_pre-cambio-estados".</p>
+  </section>
+
+  <div class="colun-band"></div>
+  <footer>
+    Dashboard generado a partir de "Detalle pérdidas planta COLUN (v1)" + "Historia de cambio de trampas (17-06-2026)", reconciliado contra el "Censo General SXS PILU-COLUMELA-MATRICES" (marzo-2026). <span id="footTotal">84</span> registros en total.<br>
+    Totales verificados: costo total <span id="footClp">$142.173.028</span> CLP/año &middot; cumplimiento <span id="footPct">47,6</span>% (<span id="footRealizadaFrac">40/84</span> trampas Realizadas).<br>
+    Ver el archivo editable con fórmulas y tabla expandible en "Seguimiento trampas correctivo.xlsx".<br>
+    Elaborado para uso interno - proceso térmico COLUN.<br>
+    <span style="font-size:1.15em;font-weight:700;">Compilado por Felipe Barrera</span>
+  </footer>
+
+</div>
+
+<script>
+let DATA = [{"tag":12898,"conexion":"40.00mm(1 1/2 \") FT14-10 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Planta PILU Exterior Planta","planta":"PILU","condicion":"Falla Abierta","kgh":90.24,"tonyear":233.9,"clp":11617137,"estado":"Realizada","comentario":"Realizado","ot":"1050308","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Mantequilla"},{"tag":10161,"conexion":"40.00mm(1 1/2 \") FT43-10 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Interior Planta Sala Elaboración","planta":"COLUMELA","condicion":"Falla Abierta","kgh":57.99,"tonyear":150.31,"clp":7465401,"estado":"Realizada","comentario":"Homologada a ADCA Modelo FL27-10 DN40 PN16","ot":"1039365","responsable":"FRIVERA","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Interior Planta Columela"},{"tag":12893,"conexion":"40.00mm(1 1/2 \") FT14-4.5 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Planta PILU Exterior Planta","planta":"PILU","condicion":"Falla Abierta","kgh":54.14,"tonyear":140.33,"clp":6969767,"estado":"Realizada","comentario":"Realizado","ot":"1050315","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"CIP 2 Pasteurización"},{"tag":12900,"conexion":"40.00mm(1 1/2 \") FT14-10 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Planta PILU Exterior Planta","planta":"PILU","condicion":"Falla Abierta","kgh":54.14,"tonyear":140.33,"clp":6969767,"estado":"Realizada","comentario":"Realizado","ot":"1050341","responsable":"RCABEZAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"CIP central"},{"tag":10971,"conexion":"40.00mm(1 1/2 \") FT43-4.5 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Interior Planta Sala CIP","planta":"COLUMELA","condicion":"Falla Abierta","kgh":53.17,"tonyear":137.81,"clp":6844893,"estado":"Realizada","comentario":"","ot":"1039377","responsable":"NMOLINA","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"CIP 3"},{"tag":10987,"conexion":"40.00mm(1 1/2 \") FT43-10 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Interior Planta Sala Elaboración","planta":"COLUMELA","condicion":"Falla Abierta","kgh":53.17,"tonyear":137.81,"clp":6844893,"estado":"Realizada","comentario":"Homologada a ADCA Modelo FL27-10 DN40 PN16","ot":"1018544","responsable":"DSILVA","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Pasteurizador 6"},{"tag":12801,"conexion":"25.00mm(1 \") J5SX-21 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Sala de Calderas","planta":"PILU","condicion":"Falla Abierta","kgh":40.34,"tonyear":104.56,"clp":5193210,"estado":"Realizada","comentario":"Realizado","ot":"1050349","responsable":"RCABEZAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Sala calderas"},{"tag":12811,"conexion":"25.00mm(1 \") J5SX-21 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Exterior Planta","planta":"PILU","condicion":"Falla Abierta","kgh":37.24,"tonyear":96.53,"clp":4794129,"estado":"Realizada","comentario":"Realizado","ot":"1050355","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Deshidratado"},{"tag":12812,"conexion":"25.00mm(1 \") FT14HC-10 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Planta PILU Exterior Planta","planta":"PILU","condicion":"Falla Abierta","kgh":32.32,"tonyear":83.77,"clp":4160748,"estado":"Realizada","comentario":"Realizado","ot":"1050383","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manifold zona norte"},{"tag":10959,"conexion":"25.00mm(1 \") FT43-10 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Interior Planta Sala Pasteurizadores","planta":"COLUMELA","condicion":"Falla Abierta","kgh":25.01,"tonyear":64.82,"clp":3219687,"estado":"Pendiente","comentario":"consultar que  repuesto falta","ot":"1013166","responsable":"FRIVERA","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Pasteurizador 7"},{"tag":12859,"conexion":"15.00mm(1/2 \") BPT13A No","fabricante":"Spirax Sarco Presión Balanceada","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":22.37,"tonyear":57.98,"clp":2879824,"estado":"No realizada","comentario":"Repuesto debe llegar a planta para programar. Compra directa","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":10915,"conexion":"20.00mm(3/4 \") TH32Y Si","fabricante":"ADCA Termostática","presion":"","localizacion":"Exterior Planta Linea Vapor Nueva Biomasa-PILU","planta":"COLUMELA","condicion":"Falla Abierta","kgh":17.24,"tonyear":44.69,"clp":2219409,"estado":"Pendiente","comentario":"Adjudicar trabajo a personal que se encuentre con turno T85 o de lo contrario a mi mismo pero que me encuentre con turno t85 para así dedicar trabajo exclusivo para aquello.","ot":"1007860","responsable":"JSANDOVAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Biomasa a PILU"},{"tag":10922,"conexion":"20.00mm(3/4 \") TH32Y Si","fabricante":"ADCA Termostática","presion":"","localizacion":"Exterior Planta Linea Vapor Nueva Biomasa-PILU","planta":"COLUMELA","condicion":"Falla Abierta","kgh":17.24,"tonyear":44.69,"clp":2219409,"estado":"Pendiente","comentario":"Adjudicar trabajo a personal que se encuentre con turno T85 o de lo contrario a mi mismo pero que me encuentre con turno t85 para así dedicar trabajo exclusivo para aquello.","ot":"1007871","responsable":"JSANDOVAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Biomasa a PILU"},{"tag":10929,"conexion":"20.00mm(3/4 \") TH32Y Si","fabricante":"ADCA Termostática","presion":"","localizacion":"Exterior Planta Linea Vapor Nueva Biomasa-PILU","planta":"COLUMELA","condicion":"Falla Abierta","kgh":17.24,"tonyear":44.69,"clp":2219409,"estado":"Programada","comentario":"En programación","ot":"1007883","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Biomasa a PILU"},{"tag":10946,"conexion":"20.00mm(3/4 \") TH32Y Si","fabricante":"ADCA Termostática","presion":"","localizacion":"Exterior Planta Linea Vapor PILU- Columela","planta":"COLUMELA","condicion":"Falla Abierta","kgh":17.24,"tonyear":44.69,"clp":2219409,"estado":"Realizada","comentario":"","ot":"1007901","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor PILU a COLUMELA"},{"tag":10905,"conexion":"20.00mm(3/4 \") Unknown Si","fabricante":"ADCA Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor Biomasa- Columela","planta":"COLUMELA","condicion":"Falla Abierta","kgh":16.54,"tonyear":42.87,"clp":2129293,"estado":"Realizada","comentario":"","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Biomasa Columela"},{"tag":12819,"conexion":"25.00mm(1 \") FT43-10 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":14.93,"tonyear":38.7,"clp":1922028,"estado":"Programada","comentario":"En programación","ot":"1050389","responsable":"HZAMBRANO","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":12830,"conexion":"25.00mm(1 \") FT43-10 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":14.93,"tonyear":38.7,"clp":1922028,"estado":"Programada","comentario":"En programación","ot":"1050395","responsable":"JSANDOVAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":12837,"conexion":"20.00mm(3/4 \") MST21H No","fabricante":"Spirax Sarco Presión Balanceada","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":13.84,"tonyear":35.87,"clp":1781706,"estado":"Realizada","comentario":"","ot":"1045576","responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":12838,"conexion":"20.00mm(3/4 \") MST21H No","fabricante":"Spirax Sarco Presión Balanceada","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":13.84,"tonyear":35.87,"clp":1781706,"estado":"Realizada","comentario":"","ot":"1045582","responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":12842,"conexion":"15.00mm(1/2 \") MST21H No","fabricante":"Spirax Sarco Presión Balanceada","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":13.84,"tonyear":35.87,"clp":1781706,"estado":"Realizada","comentario":"","ot":"1008061","responsable":"JSANDOVAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":12998,"conexion":"20.00mm(3/4 \") TH32Y Si","fabricante":"ADCA Termostática","presion":"","localizacion":"Planta PILU Planta APV","planta":"PILU","condicion":"Falla Abierta","kgh":13.81,"tonyear":35.8,"clp":1777844,"estado":"Realizada","comentario":"","ot":"1007907","responsable":"GVERA","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"APV"},{"tag":10156,"conexion":"25.00mm(1 \") FT14-4.5 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Interior Planta Recepción","planta":"COLUMELA","condicion":"Falla Abierta","kgh":13.36,"tonyear":34.63,"clp":1719913,"estado":"Realizada","comentario":"","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Interior Planta Columela"},{"tag":10969,"conexion":"25.00mm(1 \") FT43-4.5 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Interior Planta Sala CIP","planta":"COLUMELA","condicion":"Falla Abierta","kgh":13.29,"tonyear":34.45,"clp":1710901,"estado":"Programada","comentario":"consultar que  repuesto falta","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"CIP 1"},{"tag":12903,"conexion":"20.00mm(3/4 \") TH32Y Si","fabricante":"ADCA Termostática","presion":"","localizacion":"Planta PILU Exterior Planta","planta":"PILU","condicion":"Falla Abierta","kgh":11.51,"tonyear":29.83,"clp":1481751,"estado":"Programada","comentario":"En programación","ot":"1051151","responsable":"RCABEZAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Sin área"},{"tag":12944,"conexion":"20.00mm(3/4 \") J3X-10 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Sala Marmitas Manjar","planta":"PILU","condicion":"Falla Abierta","kgh":11.51,"tonyear":29.83,"clp":1481751,"estado":"Programada","comentario":"En programación","ot":"1050407","responsable":"JSANDOVAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar"},{"tag":12945,"conexion":"20.00mm(3/4 \") J3X-10 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Sala Marmitas Manjar","planta":"PILU","condicion":"Falla Abierta","kgh":11.51,"tonyear":29.83,"clp":1481751,"estado":"Realizada","comentario":"En programación","ot":"1050429","responsable":"HZAMBRANO","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar"},{"tag":12948,"conexion":"20.00mm(3/4 \") J3X-10 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Sala Marmitas Manjar","planta":"PILU","condicion":"Falla Abierta","kgh":11.51,"tonyear":29.83,"clp":1481751,"estado":"Realizada","comentario":"En programación","ot":"1050435","responsable":"HZAMBRANO","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar"},{"tag":12949,"conexion":"20.00mm(3/4 \") J3X-10 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Sala Marmitas Manjar","planta":"PILU","condicion":"Falla Abierta","kgh":11.51,"tonyear":29.83,"clp":1481751,"estado":"Realizada","comentario":"En programación","ot":"1050441","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar"},{"tag":12951,"conexion":"20.00mm(3/4 \") J3X-10 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Sala Marmitas Manjar","planta":"PILU","condicion":"Falla Abierta","kgh":11.51,"tonyear":29.83,"clp":1481751,"estado":"Realizada","comentario":"En programación","ot":"1050447","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar"},{"tag":12952,"conexion":"20.00mm(3/4 \") J3X-10 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Sala Marmitas Manjar","planta":"PILU","condicion":"Falla Abierta","kgh":11.51,"tonyear":29.83,"clp":1481751,"estado":"Programada","comentario":"En programación","ot":"1050453","responsable":"JSANDOVAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar"},{"tag":12953,"conexion":"20.00mm(3/4 \") J3X-10 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Sala Marmitas Manjar","planta":"PILU","condicion":"Falla Abierta","kgh":11.51,"tonyear":29.83,"clp":1481751,"estado":"Programada","comentario":"En programación","ot":"1050459","responsable":"JSANDOVAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar"},{"tag":12965,"conexion":"25.00mm (1\") TDS52 Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Torre de Secado Niro 2","planta":"PILU","condicion":"Falla Abierta","kgh":9.71,"tonyear":25.17,"clp":1250027,"estado":"No realizada","comentario":"Está en planta, La tiene D. López","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"NIRO 2"},{"tag":10990,"conexion":"15.00mm(1/2 \") BPT13S Si","fabricante":"Spirax Sarco Presión Balanceada","presion":"","localizacion":"Interior Planta Sala Elaboración","planta":"COLUMELA","condicion":"Falla Abierta","kgh":9.15,"tonyear":23.72,"clp":1177934,"estado":"No realizada","comentario":"Está en planta, La tiene D. López","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Pasteurizador 6"},{"tag":10953,"conexion":"20.00mm(3/4 \") Unknown Si","fabricante":"TLV Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor PILU- Columela","planta":"COLUMELA","condicion":"Falla Abierta","kgh":8.98,"tonyear":23.27,"clp":1156049,"estado":"No realizada","comentario":"Homologar a Spirax, código SAP 6711133","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor PILU a COLUMELA"},{"tag":10909,"conexion":"15.00mm(1/2 \") No.8 Si","fabricante":"Spirax Sarco Expansión Líquidos","presion":"","localizacion":"Exterior Planta Linea Vapor Biomasa- Columela","planta":"COLUMELA","condicion":"Falla Abierta","kgh":8.94,"tonyear":23.17,"clp":1150900,"estado":"No realizada","comentario":"Está en planta, La tiene D. López","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Biomasa Columela"},{"tag":10910,"conexion":"15.00mm(1/2 \") No.8 Si","fabricante":"Spirax Sarco Expansión Líquidos","presion":"","localizacion":"Exterior Planta Linea Vapor Biomasa- Columela","planta":"COLUMELA","condicion":"Falla Abierta","kgh":8.94,"tonyear":23.17,"clp":1150900,"estado":"No realizada","comentario":"Está en planta, La tiene D. López","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Biomasa Columela"},{"tag":10988,"conexion":"25.00mm(1 \") FT14-10 Si","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Interior Planta Sala Elaboración","planta":"COLUMELA","condicion":"Falla Abierta","kgh":7.23,"tonyear":18.74,"clp":930761,"estado":"Realizada","comentario":"","ot":"1013159","responsable":"FRIVERA","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Pasteurizador 6"},{"tag":12820,"conexion":"15.00mm(1/2 \") BTM7 Si","fabricante":"Spirax Sarco Presión Balanceada","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":6.93,"tonyear":17.96,"clp":892140,"estado":"No realizada","comentario":"Repuesto debe llegar a planta para programar. Compra directa","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":12943,"conexion":"20.00mm(3/4 \") J3X-10 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Sala Marmitas Manjar","planta":"PILU","condicion":"Falla Abierta","kgh":6.91,"tonyear":17.91,"clp":889566,"estado":"Programada","comentario":"En programación","ot":"1050465","responsable":"RCABEZAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar"},{"tag":10907,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor Biomasa- Columela","planta":"COLUMELA","condicion":"Falla Abierta","kgh":6.73,"tonyear":17.44,"clp":866393,"estado":"Realizada","comentario":"","ot":"1007990","responsable":"RCABEZAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Biomasa Columela"},{"tag":10913,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor Antigua Biomasa-PILU","planta":"COLUMELA","condicion":"Falla Abierta","kgh":6.73,"tonyear":17.44,"clp":866393,"estado":"Realizada","comentario":"","ot":"1008001","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Antigua Biomasa-PILU"},{"tag":10928,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor PILU- Columela","planta":"COLUMELA","condicion":"Falla Abierta","kgh":6.73,"tonyear":17.44,"clp":866393,"estado":"Realizada","comentario":"","ot":"1008007","responsable":"INAVARRETE","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor PILU a COLUMELA"},{"tag":10930,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor PILU- Columela","planta":"COLUMELA","condicion":"Falla Abierta","kgh":6.73,"tonyear":17.44,"clp":866393,"estado":"Realizada","comentario":"","ot":"1008013","responsable":"INAVARRETE","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor PILU a COLUMELA"},{"tag":10938,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor Antigua Biomasa-PILU","planta":"COLUMELA","condicion":"Falla Abierta","kgh":6.73,"tonyear":17.44,"clp":866393,"estado":"Realizada","comentario":"","ot":"1008019","responsable":"JSANDOVAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Antigua Biomasa-PILU"},{"tag":10945,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor Antigua Biomasa-PILU","planta":"COLUMELA","condicion":"Falla Abierta","kgh":6.73,"tonyear":17.44,"clp":866393,"estado":"Realizada","comentario":"","ot":"1008025","responsable":"RCABEZAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Antigua Biomasa-PILU"},{"tag":10949,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor PILU- Columela","planta":"COLUMELA","condicion":"Falla Abierta","kgh":6.73,"tonyear":17.44,"clp":866393,"estado":"Realizada","comentario":"","ot":"1008031","responsable":"JSANDOVAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor PILU a COLUMELA"},{"tag":10956,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor a PILU","planta":"PILU","condicion":"Falla Abierta","kgh":6.73,"tonyear":17.44,"clp":866393,"estado":"Realizada","comentario":"","ot":"1008037","responsable":"INAVARRETE","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Matriz 1, Matriz 2"},{"tag":10957,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor a PILU","planta":"PILU","condicion":"Falla Abierta","kgh":6.73,"tonyear":17.44,"clp":866393,"estado":"Realizada","comentario":"","ot":"1008043","responsable":"RCABEZAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Matriz 1, Matriz 2"},{"tag":10958,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor a PILU","planta":"PILU","condicion":"Falla Abierta","kgh":6.73,"tonyear":17.44,"clp":866393,"estado":"Realizada","comentario":"","ot":"1008049","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Matriz 1, Matriz 2"},{"tag":12879,"conexion":"15.00mm(1/2 \") J3SX-10 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Planta PILU Exterior Planta","planta":"PILU","condicion":"Falla Abierta","kgh":6.62,"tonyear":17.16,"clp":852232,"estado":"Realizada","comentario":"Realizado","ot":"1050471","responsable":"ARIVAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Chocolate"},{"tag":12897,"conexion":"15.00mm(1/2 \") TD42 Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Exterior Planta","planta":"PILU","condicion":"Falla Abierta","kgh":6.46,"tonyear":16.75,"clp":831635,"estado":"No realizada","comentario":"Está en planta, La tiene D. López","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar - Mantequilla"},{"tag":10911,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor PILU- Columela","planta":"COLUMELA","condicion":"Falla Abierta","kgh":6.25,"tonyear":16.2,"clp":804600,"estado":"Realizada","comentario":"","ot":"1008055","responsable":"RCABEZAS","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor PILU a COLUMELA"},{"tag":10967,"conexion":"20.00mm(3/4 \") Unknown Si","fabricante":"ADCA Termodinámic a","presion":"","localizacion":"Interior Planta Sala CIP","planta":"COLUMELA","condicion":"Falla Abierta","kgh":6.08,"tonyear":15.76,"clp":782715,"estado":"Realizada","comentario":"En programación","ot":"1050477","responsable":"NLEAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Sala CIP"},{"tag":10975,"conexion":"20.00mm(3/4 \") Unknown Si","fabricante":"ARI Termodinámic a","presion":"","localizacion":"Interior Planta Pasillo","planta":"COLUMELA","condicion":"Falla Abierta","kgh":6.08,"tonyear":15.76,"clp":782715,"estado":"No realizada","comentario":"Homologar a Spirax, código SAP 6711133","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Interior Planta Columela"},{"tag":10989,"conexion":"15.00mm(1/2 \") BPT13S Si","fabricante":"Spirax Sarco Presión Balanceada","presion":"","localizacion":"Interior Planta Sala Elaboración","planta":"COLUMELA","condicion":"Falla Abierta","kgh":5.49,"tonyear":14.23,"clp":706761,"estado":"No realizada","comentario":"Está en planta, La tiene D. López","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Pasteurizador 6"},{"tag":12851,"conexion":"15.00mm(1/2 \") TD42 No","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":5.4,"tonyear":14.0,"clp":695174,"estado":"Realizada","comentario":"","ot":"1045588","responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":12939,"conexion":"20.00mm(3/4 \") TD42 Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Planta PLF","planta":"PILU","condicion":"Falla Abierta","kgh":4.71,"tonyear":12.21,"clp":606347,"estado":"Programada","comentario":"En programación","ot":"1008067","responsable":"INAVARRETE","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"PLF"},{"tag":12955,"conexion":"20.00mm(3/4 \") TD42 Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Sala Marmitas Manjar","planta":"PILU","condicion":"Falla Abierta","kgh":4.71,"tonyear":12.21,"clp":606347,"estado":"Pendiente","comentario":"No se encuentra ubicación de trampa","ot":"1023765","responsable":"INAVARRETE","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar"},{"tag":12956,"conexion":"20.00mm(3/4 \") TD42 Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Sala Marmitas Manjar","planta":"PILU","condicion":"Falla Abierta","kgh":4.71,"tonyear":12.21,"clp":606347,"estado":"Programada","comentario":"En programación","ot":"1023771","responsable":"INAVARRETE","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Manjar"},{"tag":10966,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Interior Planta Sala CIP","planta":"COLUMELA","condicion":"Falla Abierta","kgh":4.56,"tonyear":11.82,"clp":587036,"estado":"Realizada","comentario":"","ot":"1023658","responsable":"DSILVA","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Sala CIP"},{"tag":10986,"conexion":"15.00mm(1/2 \") J3X-5 Si","fabricante":"TLV Flotador","presion":"","localizacion":"Interior Planta Pasillo","planta":"COLUMELA","condicion":"Falla Abierta","kgh":4.07,"tonyear":10.55,"clp":523956,"estado":"Programada","comentario":"En programación","ot":"1050490","responsable":"NLEAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Interior Planta Columela"},{"tag":8866,"conexion":"20.00mm(3/4 \") Unknown Si","fabricante":"TLV Termodinámic a","presion":"","localizacion":"Planta PILU Pasteurización Nueva","planta":"PILU","condicion":"Falla Abierta","kgh":3.6,"tonyear":9.33,"clp":463450,"estado":"No realizada","comentario":"Sin ni datos, verificar","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Pasteurización Nueva"},{"tag":10976,"conexion":"DN20 (3/4 \") TDS52 Spirax Sarco Termodinámica","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Interior Planta Pasillo","planta":"COLUMELA","condicion":"Falla Abierta","kgh":3.53,"tonyear":9.15,"clp":454438,"estado":"Pendiente","comentario":"Revisar foto, aparece error, No tiene ubicaciíon","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Interior Planta Columela"},{"tag":12843,"conexion":"15.00mm(1/2 \") TD42 No","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":3.24,"tonyear":8.4,"clp":417105,"estado":"Realizada","comentario":"","ot":"1045594","responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":10999,"conexion":"15.00mm(1/2 \") UTD26L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Interior Planta Sala Elaboración","planta":"COLUMELA","condicion":"Falla Abierta","kgh":2.98,"tonyear":7.72,"clp":383633,"estado":"Programada","comentario":"En programación","ot":"1060105","responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Interior Planta Columela"},{"tag":10163,"conexion":"15.00mm(1/2 \") Unknown Si","fabricante":"TLV Termodinámic a","presion":"","localizacion":"Interior Planta Sala Elaboración","planta":"COLUMELA","condicion":"Falla Abierta","kgh":2.78,"tonyear":7.21,"clp":357886,"estado":"No realizada","comentario":"Homologar a Spirax, código","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Interior Planta Columela"},{"tag":12877,"conexion":"15.00mm(1/2 \") FT14-14 No","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Planta PILU Exterior Planta","planta":"PILU","condicion":"Falla Abierta","kgh":2.65,"tonyear":6.87,"clp":341150,"estado":"No realizada","comentario":"Repuesto debe llegar a planta para programar. Compra a travez de bodega x stock","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":10965,"conexion":"15.00mm(1/2 \") TD42L Si","fabricante":"ADCA Termodinámic a","presion":"","localizacion":"Interior Planta Sala Pasteurizadores","planta":"COLUMELA","condicion":"Falla Abierta","kgh":2.04,"tonyear":5.29,"clp":262621,"estado":"Programada","comentario":"En programación","ot":"1007947","responsable":"NLEAL","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Pasteurizador 3"},{"tag":12834,"conexion":"15.00mm(1/2 \") DK 47-H-32 No","fabricante":"Gestra Termodinámic a","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":1.56,"tonyear":4.04,"clp":200828,"estado":"Realizada","comentario":"","ot":"1045600","responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":12844,"conexion":"15.00mm(1/2 \") TDS52 No","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":1.56,"tonyear":4.04,"clp":200828,"estado":"Realizada","comentario":"","ot":"1045606","responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":12942,"conexion":"15.00mm(1/2 \") TDS52 Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Planta PLF","planta":"PILU","condicion":"Falla Abierta","kgh":1.29,"tonyear":3.34,"clp":166069,"estado":"No realizada","comentario":"Homologar a Spirax, código","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"PLF"},{"tag":10995,"conexion":"15.00mm(1/2 \") Unknown Si","fabricante":"ADCA Termodinámic a","presion":"","localizacion":"Interior Planta Sala Elaboración","planta":"COLUMELA","condicion":"Falla Abierta","kgh":1.27,"tonyear":3.29,"clp":163495,"estado":"Realizada","comentario":"Actualizado por cruce con OT 1007965 (Realizado).","ot":"1007965","responsable":"NMOLINA","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Interior Planta Columela"},{"tag":11000,"conexion":"15.00mm(1/2 \") Unknown Si","fabricante":"ADCA Termodinámic a","presion":"","localizacion":"Interior Planta Sala Elaboración","planta":"COLUMELA","condicion":"Falla Abierta","kgh":1.27,"tonyear":3.29,"clp":163495,"estado":"Realizada","comentario":"Actualizado por cruce con OT 1007971 (Realizado).","ot":"1007971","responsable":"FRIVERA","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Interior Planta Columela"},{"tag":12823,"conexion":"15.00mm(1/2 \") TDS52 Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":0.78,"tonyear":2.02,"clp":100414,"estado":"Realizada","comentario":"","ot":"1045612","responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":12824,"conexion":"15.00mm(1/2 \") TDS52 Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Planta UHT","planta":"PILU","condicion":"Falla Abierta","kgh":0.78,"tonyear":2.02,"clp":100414,"estado":"Realizada","comentario":"","ot":"1045618","responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"UHT"},{"tag":8864,"conexion":"20.00mm(3/4 \") TD42 Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Planta PILU Pasteurización Nueva","planta":"PILU","condicion":"Fuga externa","kgh":0,"tonyear":0.0,"clp":0,"estado":"Programada","comentario":"En programación","ot":"1023783","responsable":"HZAMBRANO","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Pasteurización Nueva"},{"tag":10155,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Interior Planta Recepción","planta":"COLUMELA","condicion":"Fuga externa","kgh":0,"tonyear":0.0,"clp":0,"estado":"Realizada","comentario":"","ot":null,"responsable":null,"fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Interior Planta Columela"},{"tag":10940,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor Antigua Biomasa-PILU","planta":"COLUMELA","condicion":"Fuga externa","kgh":0,"tonyear":0.0,"clp":0,"estado":"Programada","comentario":"En programación","ot":"1023789","responsable":"HZAMBRANO","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Antigua Biomasa-PILU"},{"tag":10947,"conexion":"20.00mm(3/4 \") TD42L Si","fabricante":"Spirax Sarco Termodinámic a","presion":"","localizacion":"Exterior Planta Linea Vapor Antigua Biomasa-PILU","planta":"COLUMELA","condicion":"Fuga externa","kgh":0,"tonyear":0.0,"clp":0,"estado":"Programada","comentario":"En programación","ot":"1023795","responsable":"HZAMBRANO","fuente":"Detalle pérdidas (censo original, 80 trampas)","nuevo":false,"area":"Linea vapor Antigua Biomasa-PILU"},{"tag":10157,"conexion":"DN25 (1 \") FT14-4.5","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Interior Planta Recepción CIP 4 Calentamiento Acido 4.0 bar (g)","planta":"COLUMELA","condicion":"Fuera de uso (censo original) - Reactivada","kgh":13.36,"tonyear":34.63,"clp":1719913,"estado":"Realizada","comentario":"Trampa reactivada (no estaba en el censo original de 80)","ot":"1007848","responsable":"NMOLINA","fuente":"Historia de cambio + Censo general SXS","nuevo":true,"area":"Interior Planta Columela"},{"tag":10972,"conexion":"DN25 (1 \") FTS14-10","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Interior Planta Sala CIP CIP 5 Calentamiento Soda 4.5 bar (g)","planta":"COLUMELA","condicion":"Fuera de uso (censo original) - Reactivada","kgh":7.23,"tonyear":18.74,"clp":930761,"estado":"Programada","comentario":"Trampa reactivada (no estaba en el censo original de 80)","ot":"1013151","responsable":"FRIVERA","fuente":"Historia de cambio + Censo general SXS","nuevo":true,"area":"CIP 5"},{"tag":10974,"conexion":"DN25 (1 \") FTS14-4.5","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Interior Planta Sala CIP Microfiltrado 4.5 bar (g)","planta":"COLUMELA","condicion":"Fuera de uso (censo original) - Reactivada","kgh":13.36,"tonyear":34.63,"clp":1719913,"estado":"Pendiente","comentario":"Trampa reactivada (no estaba en el censo original de 80), Trampa aún no llega a planta, en tránsito","ot":"1007854","responsable":"NLEAL","fuente":"Historia de cambio + Censo general SXS","nuevo":true,"area":"Sala CIP"},{"tag":10906,"conexion":"DN25 (1 \") FT14HC-14","fabricante":"Spirax Sarco Flotador","presion":"","localizacion":"Exterior Planta Linea Vapor Biomasa- Columela Manifold Columela","planta":"COLUMELA","condicion":"Falla Abierta - Reactivada","kgh":32.32,"tonyear":83.77,"clp":4160318,"estado":"No realizada","comentario":"Trampa reactivada (no estaba en el censo original de 80) Se detecta falla posterior, Ya en planta en posesión de D. López","ot":null,"responsable":null,"fuente":"Historia de cambio + Censo general SXS","nuevo":true,"area":"Linea vapor Biomasa Columela"}];
+
+// ---------- Utilidades ----------
+const fmtCLP = n => '$' + Math.round(n).toLocaleString('es-CL');
+const fmtNum = (n,d=1) => n.toLocaleString('es-CL',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtM = n => '$'+(n/1e6).toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1})+'M';
+
+Chart.register(ChartDataLabels);
+
+// ---------- Categorías de estado (constantes, no dependen de los datos) ----------
+const estadoCats = ['Realizada','Programada','Pendiente','No realizada'];
+const estadoColors = ['#1f9d55','#e08a1e','#d64545','#7a8494'];
+const estadoColorMap = {}; estadoCats.forEach((c,i)=>estadoColorMap[c]=estadoColors[i]);
+
+// ---------- Instancias de gráficos (para poder destruirlas y recrearlas si los datos se actualizan) ----------
+let chartEstadoInst=null, chartPlantaInst=null, chartLocalizacionInst=null, chartAreaInst=null, chartMotivoInst=null;
+
+// ---------- Estadísticas agregadas: se calculan en vivo desde DATA (antes eran texto fijo en el HTML) ----------
+function computeStats(){
+  const total = DATA.length;
+  const byEstado = {};
+  estadoCats.forEach(c => byEstado[c] = {n:0, kgh:0, tonyear:0, clp:0});
+  DATA.forEach(d=>{
+    const e = byEstado[d.estado] ? d.estado : 'No realizada';
+    byEstado[e].n++;
+    byEstado[e].kgh += d.kgh||0;
+    byEstado[e].tonyear += d.tonyear||0;
+    byEstado[e].clp += d.clp||0;
+  });
+  const pilu = DATA.filter(d=>d.planta==='PILU').length;
+  const columela = DATA.filter(d=>d.planta==='COLUMELA').length;
+  const reactivadas = DATA.filter(d=>d.nuevo);
+  const fallaAbierta = DATA.filter(d=>/falla abierta/i.test(d.condicion||'')).length;
+  const fugaExterna = DATA.filter(d=>/fuga externa/i.test(d.condicion||'')).length;
+  const totKgh = DATA.reduce((a,d)=>a+(d.kgh||0),0);
+  const totTon = DATA.reduce((a,d)=>a+(d.tonyear||0),0);
+  const totClp = DATA.reduce((a,d)=>a+(d.clp||0),0);
+  const sinRepEstados = ['Programada','Pendiente','No realizada'];
+  const sinRep = {n:0,kgh:0,tonyear:0,clp:0};
+  sinRepEstados.forEach(e=>{ sinRep.n+=byEstado[e].n; sinRep.kgh+=byEstado[e].kgh; sinRep.tonyear+=byEstado[e].tonyear; sinRep.clp+=byEstado[e].clp; });
+  const conOt = DATA.filter(d=>d.ot);
+  const sinOt = DATA.filter(d=>!d.ot);
+  const otUnicas = new Set(conOt.map(d=>String(d.ot))).size;
+  const sinOtPorEstado = {};
+  estadoCats.forEach(c=>sinOtPorEstado[c]=0);
+  sinOt.forEach(d=>{ sinOtPorEstado[d.estado] = (sinOtPorEstado[d.estado]||0)+1; });
+  return {total, byEstado, pilu, columela, reactivadas, fallaAbierta, fugaExterna, totKgh, totTon, totClp, sinRep, conOtN: conOt.length, sinOtN: sinOt.length, otUnicas, sinOtPorEstado};
+}
+
+function applyStats(){
+  const s = computeStats();
+  const setText = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  const fmtPct = n => n.toFixed(1).replace('.', ',');
+  const realizada = s.byEstado['Realizada'];
+
+  setText('heroRecClp', fmtCLP(realizada.clp) + ' / año');
+  setText('heroRecN', realizada.n);
+  setText('heroRecKgh', fmtNum(realizada.kgh,1));
+  setText('heroTotClp', fmtCLP(s.totClp) + ' / año');
+  setText('heroTotN', s.total);
+  setText('heroTotKgh', fmtNum(s.totKgh,1));
+  setText('heroPerClp', fmtCLP(s.sinRep.clp) + ' / año');
+  setText('heroPerN', s.sinRep.n);
+  setText('heroPerKgh', fmtNum(s.sinRep.kgh,1));
+
+  setText('kpiTotal', s.total);
+  setText('kpiPilu', s.pilu);
+  setText('kpiColumela', s.columela);
+  setText('kpiReactivadasN', s.reactivadas.length);
+  setText('kpiReactivadasTags', s.reactivadas.map(d=>d.tag).join(', '));
+  setText('kpiTotKgh', fmtNum(s.totKgh,1) + ' Kv/hr');
+  setText('kpiTotTon', fmtNum(s.totTon,1));
+  setText('kpiRecKgh', fmtNum(realizada.kgh,1) + ' Kv/hr');
+  setText('kpiRecN', realizada.n);
+  setText('kpiRecTon', fmtNum(realizada.tonyear,1));
+  setText('kpiRecClp', fmtCLP(realizada.clp));
+  setText('kpiPerKgh', fmtNum(s.sinRep.kgh,1) + ' Kv/hr');
+  setText('kpiPerN', s.sinRep.n);
+  setText('kpiPerTon', fmtNum(s.sinRep.tonyear,1));
+  setText('kpiPerClp', fmtCLP(s.sinRep.clp));
+
+  const idPrefix = {'Realizada':'stRealizada','Programada':'stProgramada','Pendiente':'stPendiente','No realizada':'stNorealizada'};
+  estadoCats.forEach(cat=>{
+    const st = s.byEstado[cat];
+    const pfx = idPrefix[cat];
+    setText(pfx+'N', st.n);
+    setText(pfx+'Pct', s.total>0 ? fmtPct(st.n/s.total*100) : '0,0');
+    setText(pfx+'Clp', fmtCLP(st.clp));
+  });
+
+  setText('otUnicas', s.otUnicas);
+  setText('otConOt', s.conOtN + '/' + s.total);
+  setText('otSinOt', s.sinOtN + '/' + s.total);
+  const otDescMap = {
+    'No realizada': 'sin gestión iniciada',
+    'Programada': 'en programación interna sin OT formal aún',
+    'Pendiente': 'sin OT registrada aún',
+    'Realizada': 'resueltas antes del período de seguimiento de OT'
+  };
+  const parts = [];
+  estadoCats.forEach(cat=>{
+    const n = s.sinOtPorEstado[cat] || 0;
+    if(n>0) parts.push(n + ' "' + cat + '" ' + otDescMap[cat]);
+  });
+  setText('otLegendNote', s.sinOtN + ' de las ' + s.total + ' trampas no tienen OT registrada' + (parts.length ? ' (' + parts.join(' + ') + ')' : '') + '.');
+
+  setText('explFallaAbierta', s.fallaAbierta);
+  setText('explFallaAbiertaTotal', s.total);
+  setText('explFugaExterna', s.fugaExterna);
+  setText('explReactivadas', s.reactivadas.length);
+
+  setText('detTotalTitle', s.total);
+  setText('detReactivadasDesc', s.reactivadas.length);
+  setText('btnAllN', s.total);
+  setText('btnRealizadaN', s.byEstado['Realizada'].n);
+  setText('btnProgramadaN', s.byEstado['Programada'].n);
+  setText('btnPendienteN', s.byEstado['Pendiente'].n);
+  setText('btnNorealizadaN', s.byEstado['No realizada'].n);
+
+  setText('footTotal', s.total);
+  setText('footClp', fmtCLP(s.totClp));
+  setText('footPct', s.total>0 ? fmtPct(realizada.n/s.total*100) : '0,0');
+  setText('footRealizadaFrac', realizada.n + '/' + s.total);
+}
+
+function buildCharts(){
+  if(chartEstadoInst) chartEstadoInst.destroy();
+  if(chartPlantaInst) chartPlantaInst.destroy();
+  if(chartLocalizacionInst) chartLocalizacionInst.destroy();
+  if(chartAreaInst) chartAreaInst.destroy();
+  if(chartMotivoInst) chartMotivoInst.destroy();
+
+// ---------- Gráfico 1: Estado de la trampa (4 categorías) ----------
+const estadoCounts = estadoCats.map(c=>DATA.filter(d=>d.estado===c).length);
+const okCount = estadoCounts[0];
+const noCount = DATA.length - okCount;
+chartEstadoInst = new Chart(document.getElementById('chartEstado'), {
+  type:'doughnut',
+  data:{
+    labels:estadoCats.map((c,i)=>c+' ('+estadoCounts[i]+')'),
+    datasets:[{data:estadoCounts, backgroundColor:estadoColors, borderWidth:0}]
+  },
+  options:{
+    layout:{padding:{top:10, bottom:10, left:10, right:10}},
+    plugins:{
+      title:{display:true,text:'Estado de las trampas (cantidad)',font:{size:13}},
+      legend:{position:'bottom', labels:{font:{size:10}, padding:12}},
+      datalabels:{
+        color:'#fff',
+        anchor:'center',
+        align:'center',
+        font:{weight:'700', size:12},
+        textAlign:'center',
+        formatter:(v,ctx)=>{
+          if(v<=0) return '';
+          const total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+          const pct = ((v/total)*100).toFixed(1).replace('.',',');
+          return [String(v), '('+pct+'%)'];
+        }
+      }
+    },
+    cutout:'48%',
+    responsive:true, maintainAspectRatio:false
+  }
+});
+
+// ---------- Gráfico 2: Pérdida CLP por planta, apilado por estado (4 categorías) ----------
+const plantas = ['PILU','COLUMELA'];
+const clpPorPlantaEstado = estadoCats.map(cat => plantas.map(p => DATA.filter(d=>d.planta===p && d.estado===cat).reduce((a,b)=>a+b.clp,0)));
+const plantaTotalesClp = plantas.map((p,pi)=> estadoCats.reduce((sum,cat,ci)=>sum+clpPorPlantaEstado[ci][pi],0));
+chartPlantaInst = new Chart(document.getElementById('chartPlanta'), {
+  type:'bar',
+  data:{
+    labels:plantas,
+    datasets: estadoCats.map((cat,i)=>({
+      label:cat, data:clpPorPlantaEstado[i], backgroundColor:estadoColorMap[cat],
+      datalabels: i===estadoCats.length-1 ? {
+        anchor:'end', align:'right', color:'#1c2b3a', font:{weight:'700', size:11},
+        formatter:(v,ctx)=> fmtM(plantaTotalesClp[ctx.dataIndex])+' total'
+      } : {
+        color:'#fff', font:{weight:'700', size:10},
+        formatter:(v,ctx)=>{
+          const total = plantaTotalesClp[ctx.dataIndex];
+          return (total>0 && (v/total)>0.07) ? fmtM(v) : '';
+        }
+      }
+    }))
+  },
+  options:{
+    indexAxis:'y',
+    layout:{padding:{right:85}},
+    plugins:{
+      title:{display:true,text:'Costo pérdida de vapor por planta (CLP/año), por estado',font:{size:13}},
+      legend:{position:'bottom', labels:{font:{size:10}}}
+    },
+    responsive:true, maintainAspectRatio:false,
+    scales:{x:{stacked:true, ticks:{callback:v=>'$'+(v/1e6)+'M'}}, y:{stacked:true}}
+  }
+});
+
+// ---------- Gráfico interactivo: avance por planta (seleccionable) ----------
+
+// ---------- Gráfico 3: Top localizaciones por CLP, recuperado vs pendiente + total ----------
+const locMap = {};
+DATA.forEach(d=>{
+  if(!locMap[d.localizacion]) locMap[d.localizacion] = {clp:0, ok:0, no:0};
+  locMap[d.localizacion].clp += d.clp;
+  if(d.estado==='Realizada') locMap[d.localizacion].ok += d.clp;
+  else locMap[d.localizacion].no += d.clp;
+});
+const locSorted = Object.entries(locMap).sort((a,b)=>b[1].clp-a[1].clp).slice(0,12);
+chartLocalizacionInst = new Chart(document.getElementById('chartLocalizacion'), {
+  type:'bar',
+  data:{
+    labels:locSorted.map(l=>l[0]),
+    datasets:[
+      {
+        label:'Recuperado (Realizada)',
+        data:locSorted.map(l=>l[1].ok),
+        backgroundColor:'#1f9d55',
+        datalabels:{
+          color:'#fff', font:{weight:'700', size:9},
+          formatter:v=> v>0 ? fmtM(v) : '',
+          display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0
+        }
+      },
+      {
+        label:'Pendiente (Programada+Pendiente+No realizada)',
+        data:locSorted.map(l=>l[1].no),
+        backgroundColor:'#d64545',
+        datalabels:{
+          color:'#083b66', anchor:'end', align:'right', font:{weight:'700', size:10},
+          formatter:(v,ctx)=>fmtM(locSorted[ctx.dataIndex][1].clp)+' tot.'
+        }
+      }
+    ]
+  },
+  options:{
+    indexAxis:'y',
+    plugins:{
+      title:{display:true,text:'Top 12 ubicaciones por costo de pérdida (CLP/año) — recuperado vs. pendiente',font:{size:13}},
+      legend:{position:'bottom', labels:{font:{size:10}}}
+    },
+    responsive:true, maintainAspectRatio:false,
+    layout:{padding:{right:60}},
+    scales:{x:{stacked:true, ticks:{callback:v=>'$'+(v/1e6).toFixed(0)+'M'}}, y:{stacked:true}}
+  }
+});
+
+// ---------- Gráfico Área: Realizada vs Programada vs Pendiente vs No realizada ----------
+const areaMap = {};
+DATA.forEach(d=>{
+  const a = d.area || 'Sin área';
+  if(!areaMap[a]) areaMap[a] = {'Realizada':0,'Programada':0,'Pendiente':0,'No realizada':0};
+  areaMap[a][d.estado] += 1;
+});
+const areaSorted = Object.entries(areaMap)
+  .sort((a,b)=>{
+    const ta = estadoCats.reduce((s,c)=>s+a[1][c],0);
+    const tb = estadoCats.reduce((s,c)=>s+b[1][c],0);
+    return tb-ta;
+  })
+  .slice(0,15);
+chartAreaInst = new Chart(document.getElementById('chartArea'), {
+  type:'bar',
+  data:{
+    labels:areaSorted.map(a=>a[0]),
+    datasets: estadoCats.map(cat=>({label:cat, data:areaSorted.map(a=>a[1][cat]), backgroundColor:estadoColorMap[cat]}))
+  },
+  options:{
+    indexAxis:'y',
+    plugins:{
+      title:{display:true,text:'Trampas Realizadas vs. pendientes por área, detalle por estado (Top 15 áreas)',font:{size:13}},
+      legend:{position:'bottom', labels:{font:{size:10}}},
+      datalabels:{
+        color:'#fff', font:{weight:'700', size:9},
+        formatter:v=> v>0 ? v : '',
+        display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0
+      }
+    },
+    responsive:true, maintainAspectRatio:false,
+    scales:{x:{stacked:true, beginAtZero:true, ticks:{stepSize:2}}, y:{stacked:true}}
+  }
+});
+
+
+// ---------- Gráfico 4: motivos de pendientes ----------
+// Se excluyen notas de trazabilidad de datos (no son un "motivo" operativo de por qué sigue sin repararse)
+const motivoExcluir = ['Corregido por cruce de OT', 'Trampa reactivada (no estaba en el censo original de 80)'];
+const motivoMap = {};
+DATA.filter(d=>d.estado!=='Realizada').forEach(d=>{
+  const raw = d.comentario && d.comentario.trim() ? d.comentario.trim() : 'Sin comentario';
+  if(motivoExcluir.includes(raw)) return;
+  if(!motivoMap[raw]) motivoMap[raw] = {total:0, porEstado:{'Programada':0,'Pendiente':0,'No realizada':0}};
+  motivoMap[raw].total++;
+  motivoMap[raw].porEstado[d.estado]++;
+});
+const motivoSorted = Object.entries(motivoMap).sort((a,b)=>b[1].total-a[1].total);
+// color de cada barra = estado dominante de ese motivo
+const motivoColors = motivoSorted.map(([m,info])=>{
+  const dom = Object.entries(info.porEstado).sort((a,b)=>b[1]-a[1])[0][0];
+  return estadoColorMap[dom];
+});
+chartMotivoInst = new Chart(document.getElementById('chartMotivo'), {
+  type:'bar',
+  data:{
+    labels:motivoSorted.map(m=>m[0]),
+    datasets:[{label:'N° de trampas', data:motivoSorted.map(m=>m[1].total), backgroundColor:motivoColors}]
+  },
+  options:{
+    plugins:{
+      title:{display:true,text:'Motivo registrado en trampas Programada / Pendiente / No realizada',font:{size:13}},
+      legend:{display:false},
+      datalabels:{
+        color:'#1c2b3a', anchor:'end', align:'top', font:{weight:'700', size:11}
+      }
+    },
+    responsive:true, maintainAspectRatio:false,
+    layout:{padding:{top:20}},
+    scales:{y:{beginAtZero:true,ticks:{stepSize:5}}}
+  }
+});
+
+
+}
+
+function buildAll(){
+  buildCharts();
+  applyStats();
+  renderPlantaAvance(currentPlanta);
+  renderTable();
+}
+
+// ---------- Estado de conexión a datos en vivo ----------
+function setDataStatus(kind, when){
+  const el = document.getElementById('dataStatusBar');
+  if(!el) return;
+  el.className = 'data-status-bar ' + kind;
+  if(kind==='live'){
+    el.textContent = '🟢 Datos en vivo desde Google Sheets — actualizado ' + when.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  } else if(kind==='local'){
+    el.textContent = '🟡 Mostrando copia de datos guardada en el archivo (conexión a Google Sheets no configurada)';
+  } else {
+    el.textContent = '🔴 No se pudo conectar a Google Sheets — mostrando la última copia guardada en el archivo';
+  }
+}
+
+// ---------- Carga de datos en vivo desde Google Sheets (CSV publicado) ----------
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field+='"'; i++; } else { inQuotes = false; }
+      } else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field=''; }
+      else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else if(c === '\r'){ /* skip */ }
+      else field += c;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.length>1 || (r.length===1 && r[0]!==''));
+}
+
+function csvToData(text){
+  const rows = parseCSV(text);
+  if(!rows.length) return [];
+  const headers = rows[0].map(h=>h.trim());
+  const idx = name => headers.indexOf(name);
+  const iTag=idx('Tag'), iPlanta=idx('Planta'), iLoc=idx('Localizacion'), iArea=idx('Area'),
+        iFab=idx('Fabricante'), iCon=idx('Conexion'), iPres=idx('Presion'), iCond=idx('Condicion'),
+        iKgh=idx('Perdida_kgh'), iTon=idx('Perdida_tonyear'), iClp=idx('Costo_CLP_anio'),
+        iEst=idx('Estado'), iCom=idx('Comentario'), iOt=idx('OT'), iResp=idx('Responsable'), iFuente=idx('Fuente');
+  const out = [];
+  for(let r=1;r<rows.length;r++){
+    const row = rows[r];
+    if(!row[iTag]) continue;
+    const condicion = (row[iCond]||'').trim();
+    const otVal = (row[iOt]||'').trim();
+    const respVal = (row[iResp]||'').trim();
+    out.push({
+      tag: Number(row[iTag]),
+      conexion: row[iCon]||'',
+      fabricante: row[iFab]||'',
+      presion: row[iPres]||'',
+      localizacion: row[iLoc]||'',
+      planta: (row[iPlanta]||'').trim(),
+      condicion: condicion,
+      kgh: Number(row[iKgh])||0,
+      tonyear: Number(row[iTon])||0,
+      clp: Number(row[iClp])||0,
+      estado: (row[iEst]||'').trim(),
+      comentario: (row[iCom]||'').trim(),
+      ot: otVal ? otVal : null,
+      responsable: respVal ? respVal : null,
+      fuente: row[iFuente]||'',
+      nuevo: /reactivada/i.test(condicion),
+      area: row[iArea]||''
+    });
+  }
+  return out;
+}
+
+let currentPlanta = 'PILU';
+let chartPlantaAvance = null;
+
+function buildPlantaAreaData(planta){
+  const map = {};
+  DATA.filter(d=>d.planta===planta).forEach(d=>{
+    const a = d.area || 'Sin área';
+    if(!map[a]) map[a] = {'Realizada':0,'Programada':0,'Pendiente':0,'No realizada':0};
+    map[a][d.estado] += 1;
+  });
+  return Object.entries(map).sort((a,b)=>{
+    const ta = estadoCats.reduce((s,c)=>s+a[1][c],0);
+    const tb = estadoCats.reduce((s,c)=>s+b[1][c],0);
+    return tb-ta;
+  });
+}
+
+function renderPlantaAvance(planta){
+  currentPlanta = planta;
+  const rows = DATA.filter(d=>d.planta===planta);
+  const total = rows.length;
+  const ok = rows.filter(d=>d.estado==='Realizada').length;
+  const no = rows.filter(d=>d.estado!=='Realizada').length;
+  const pct = total>0 ? (ok/total*100) : 0;
+  const clpOk = rows.filter(d=>d.estado==='Realizada').reduce((a,b)=>a+b.clp,0);
+  const clpNo = rows.filter(d=>d.estado!=='Realizada').reduce((a,b)=>a+b.clp,0);
+
+  document.getElementById('pTotal').textContent = total;
+  document.getElementById('pOk').textContent = ok;
+  document.getElementById('pNo').textContent = no;
+  document.getElementById('pPct').textContent = pct.toFixed(1).replace('.',',')+'%';
+  document.getElementById('pClpOk').textContent = fmtCLP(clpOk);
+  document.getElementById('pClpNo').textContent = fmtCLP(clpNo);
+
+  const areaSorted = buildPlantaAreaData(planta);
+  const labels = areaSorted.map(a=>a[0]);
+  const datasetsData = estadoCats.map(cat => areaSorted.map(a=>a[1][cat]));
+
+  if(chartPlantaAvance){
+    chartPlantaAvance.data.labels = labels;
+    estadoCats.forEach((cat,i)=>{ chartPlantaAvance.data.datasets[i].data = datasetsData[i]; });
+    chartPlantaAvance.options.plugins.title.text = 'Avance por área — '+planta+' ('+ok+'/'+total+' Realizada)';
+    chartPlantaAvance.update();
+    return;
+  }
+
+  chartPlantaAvance = new Chart(document.getElementById('chartPlantaAvance'), {
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets: estadoCats.map((cat,i)=>({label:cat, data:datasetsData[i], backgroundColor:estadoColorMap[cat]}))
+    },
+    options:{
+      indexAxis:'y',
+      plugins:{
+        title:{display:true,text:'Avance por área — '+planta+' ('+ok+'/'+total+' Realizada)',font:{size:13}},
+        legend:{position:'bottom', labels:{font:{size:10}}},
+        datalabels:{
+          color:'#fff', font:{weight:'700', size:9},
+          formatter:v=> v>0 ? v : '',
+          display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0
+        }
+      },
+      responsive:true, maintainAspectRatio:false,
+      scales:{x:{stacked:true, beginAtZero:true, ticks:{stepSize:2}}, y:{stacked:true}}
+    }
+  });
+}
+
+document.querySelectorAll('#plantaBtns button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#plantaBtns button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderPlantaAvance(btn.dataset.planta);
+  });
+});
+renderPlantaAvance(currentPlanta);
+
+// ---------- Modal: Visor de fotos de trampas (embebido, 100% portable) ----------
+const visorDialog = document.getElementById('visorDialog');
+const visorFrame = document.getElementById('visorFrame');
+document.getElementById('btnVisor').addEventListener('click', ()=>{
+  if(!visorFrame.src || visorFrame.src==='about:blank') visorFrame.src = 'visor.html';
+  visorDialog.showModal();
+});
+document.getElementById('visorNewTab').addEventListener('click', (e)=>{
+  e.preventDefault();
+  window.open('visor.html', '_blank');
+});
+document.getElementById('visorClose').addEventListener('click', ()=> visorDialog.close());
+visorDialog.addEventListener('click', (e)=>{
+  const r = visorDialog.getBoundingClientRect();
+  const dentro = e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom;
+  if(!dentro) visorDialog.close();
+});
+
+// ---------- Tabla interactiva ----------
+let currentFilter = 'all';
+let currentSearch = '';
+let sortKey = 'clp';
+let sortDir = -1;
+
+function renderTable(){
+  let rows = DATA.filter(d=>{
+    if(currentFilter!=='all' && d.estado!==currentFilter) return false;
+    if(currentSearch){
+      const hay = (d.tag+' '+d.localizacion+' '+d.planta+' '+d.fabricante+' '+d.comentario+' '+(d.ot||'')+' '+d.estado).toLowerCase();
+      if(!hay.includes(currentSearch)) return false;
+    }
+    return true;
+  });
+  rows = rows.slice().sort((a,b)=>{
+    let va = a[sortKey], vb = b[sortKey];
+    if(typeof va === 'string'){ va = va.toLowerCase(); vb = (vb||'').toLowerCase(); }
+    if(va === undefined || va === null) va = '';
+    if(vb === undefined || vb === null) vb = '';
+    if(va < vb) return -1*sortDir;
+    if(va > vb) return 1*sortDir;
+    return 0;
+  });
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = rows.map(d=>{
+    const pillClassMap = {'Realizada':'ok','Programada':'programada','Pendiente':'no','No realizada':'norealizada'};
+    const pillClass = pillClassMap[d.estado] || 'no';
+    const pillText = d.estado;
+    const comentario = d.comentario && d.comentario.trim() ? d.comentario : '—';
+    const comentarioClass = d.comentario && d.comentario.trim() ? '' : 'empty';
+    const otText = d.ot ? d.ot : '—';
+    return '<tr>'+
+      '<td>'+d.tag+'</td>'+
+      '<td>'+d.planta+'</td>'+
+      '<td>'+d.localizacion+'</td>'+
+      '<td>'+d.fabricante+'</td>'+
+      '<td>'+d.condicion+'</td>'+
+      '<td><span class="pill '+pillClass+'">'+pillText+'</span></td>'+
+      '<td class="num">'+fmtNum(d.kgh,2)+'</td>'+
+      '<td class="num">'+fmtCLP(d.clp)+'</td>'+
+      '<td class="motivo '+comentarioClass+'">'+comentario+'</td>'+
+      '<td>'+otText+'</td>'+
+      '</tr>';
+  }).join('');
+  document.getElementById('countTag').textContent = 'Mostrando '+rows.length+' de '+DATA.length;
+}
+
+document.querySelectorAll('.filter-btns button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.filter-btns button').forEach(b=>b.classList.remove('active','ok-active','no-active','programada-active','norealizada-active'));
+    btn.classList.add('active');
+    if(btn.dataset.filter==='Realizada') btn.classList.add('ok-active');
+    if(btn.dataset.filter==='Pendiente') btn.classList.add('no-active');
+    if(btn.dataset.filter==='Programada') btn.classList.add('programada-active');
+    if(btn.dataset.filter==='No realizada') btn.classList.add('norealizada-active');
+    currentFilter = btn.dataset.filter;
+    renderTable();
+  });
+});
+
+document.getElementById('searchBox').addEventListener('input', e=>{
+  currentSearch = e.target.value.toLowerCase();
+  renderTable();
+});
+
+document.querySelectorAll('thead th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if(sortKey===key){ sortDir *= -1; } else { sortKey = key; sortDir = 1; }
+    renderTable();
+  });
+});
+
+// URL del CSV publicado de Google Sheets (Archivo > Compartir > Publicar en la Web > CSV).
+// Vacío = el dashboard usa solo la copia de datos guardada en este archivo.
+let GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSV_mpF_93aHW_MjGxFiWYRebIpEeBirUtTCLMzDNLg1C958_HftZw9V6D7kXKuujIIUzD0gJ6sQ8BL/pub?gid=1705241931&single=true&output=csv';
+
+buildAll();
+setDataStatus('local', null);
+
+if(GOOGLE_SHEET_CSV_URL){
+  fetch(GOOGLE_SHEET_CSV_URL, {cache:'no-store'})
+    .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+    .then(text => {
+      const parsed = csvToData(text);
+      if(!parsed.length) throw new Error('CSV vacío o con formato inesperado');
+      DATA = parsed;
+      buildAll();
+      setDataStatus('live', new Date());
+    })
+    .catch(err => {
+      console.error('No se pudo cargar datos en vivo desde Google Sheets:', err);
+      setDataStatus('error', null);
+    });
+}
+</script>
+</body>
+</html>
